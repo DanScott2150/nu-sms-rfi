@@ -2,27 +2,32 @@
 
 TODO: Lot's of need for cleanup & refactoring. Currently (2/17) in 'minimum viable product' mode for imminent project launch deadline. There's been a lot of headaches and curveballs on this one and right now it works and I'm terrified of changing anything. Will continue to refine and improve once we have longer-term deadlines.
 
-## IMPORTANT NOTES ON MIGRATING FROM PREPROD TO PRODUCTION:
- - [Activation] NUEDU Forms plugin needs to be deactivated + reactivated for custom wp_sms_rfi database table to be created. Planning on moving this initialization to within the custom settings page.
- - [WP-Admin] **ALL SETTINGS FIELDS in wp-admin gravity forms for 'SMS Responder' MUST be set to valid values.** Right now there is **NO** error checking or handling built in. (Need to fix)
- - [WP-Admin] Gravity Form 'RFI Default' (form id #1) needs 'supplier ID' hidden field key set to 'supplier_id' (this was previously set to 'supplierID' on preprod which screwed things up)
- - [WP-Admin] Gravity Form 'RFI Default' (form id #1) field for 'leadgroup' hidden field needs to have 'autopopulate' enabled with parameter name 'leadgroup_auto_populate'
- - [WP-Admin] GF form needs 'supplier ID' to be field ID 61 (shouldn't need to change, just noting because it's mission-critical, for now at least)
- - [WP-Admin] GF form needs 'zipcode' to be field ID 35; 'phone number' => 34, 'country code' => 51 (shouldn't need to change, just noting because it's mission-critical, for now at least)
+**Update 2/28 to change back-end logic for checking degree programs. Now checking based on actual 'degree program' submitted on form, rather than page ID.
+
+## IMPORTANT:
+ - [Activation] NUEDU Forms plugin needs to be deactivated + reactivated for custom wp_sms_rfi database table to be added. Planning on moving this initialization to within the custom settings page.
+ - [WP-Admin] ALL SETTINGS FIELDS in wp-admin gravity forms for 'SMS Responder' MUST be set to valid values. Right now there is **NO** error checking or handling built in. (Need to fix.)
+ - [WP-Admin] Gravity Form 'RFI Default' needs 'supplier ID' hidden field ID set to 'supplier_id' (this was previously set to 'supplierID' on preprod which screwed things up)
+ - [WP-Admin] Gravity Form 'RFI Default' field for 'leadgroup' hidden field needs to be set to 'autopopulate' with parameter name 'leadgroup_auto_populate'
+ - [WP-Admin] GF form needs 'supplier ID' to be field ID 61
+ - [WP-Admin] GF form needs 'zipcode' to be field ID 35; 'phone number' => 34, 'country code' => 51
  - [Code] Quiq API endpoint must contain '?allowMultipleSegments=true' otherwise SMS sends with more than 160 characters will fail
  - [Code] 'Supplier ID' & 'Lead Routing group' are populated in our custom gravityforms-doublepositive plugin. SMS routing functionality depends on minor adjustments I made to those files:
 	- plugins\gravityforms-doublepositive\inc\class-feed-processing.php [line 105]
 	- plugins\gravityforms-doublepositive\inc\class-populate-fields.php [line 156]
+- [WP-Admin]  GF form needs a new hidden field: 'is_sms_enabled', must be field ID of 65
+- [WP-Admin] can un-set leadgroup field auto-populate
+- [WP-Admin] Settings fields: Program Titles; Lead Routing Group; API Endpoint URL
 
 ## Functionality: Custom SMS RFI Follow-up
 When a user submits a standard RFI form on certain pages, they receive a series of follow-up SMS text messages (as opposed to standard follow-up phone call).
 
 Process flow:
 1) User submits RFI form on business or psych-related program page
-2) Form sends a custom 'supplier ID' value to DoublePositive, to prevent standard phone follow up
+2) Form sends a custom 'supplier ID' value to DoublePositive, to prevent standard phone follow up [RE-VISIT: Looks like data isn't being sent to DP, only Eloqua. Re:chat with Claire Leong]
 3) Form sends a custom 'lead routing group' value to Eloqua, which then flows through to OnDemand for the enrollment advisor team.
 4) (SMS #1) Form sends an API request to Quiq, which triggers an SMS text
-4a) For API requests sent outside of "business hours", the text will send the following morning. Business hours are currently set to 8am thru 6pm PST. **This is set for us by Quiq, need to contact Maile Chong <maile.chong@quiq.com> to change**
+4a) For API requests sent outside of "business hours", the text will send the following morning. Business hours are currently set to 8am thru 6pm PST. **This is controlled by Quiq, need to contact Maile Chong <maile.chong@quiq.com> to change**
 5) Form creates an entry in a custom 'wp_sms_rfi' database table, containing the user's phone number and the current timestamp
 6) Plugin schedules a wp-cron task to run every 15 minutes, which checks the 'wp_sms_rfi' table for any entries older than 30 minutes.
 7) (SMS #2) For any entries older than 30 minutes, a second API request is made to Quiq, triggering the second SMS text.
@@ -35,21 +40,21 @@ Process flow:
 	- Settings still hard-coded in code: (move these to admin settings at some point)
 		- 'leadgroup' => 'NUSMSPilot'
 		- 'QUIQ_ENDPOINT' => https://nus.goquiq.com/api/v1/messaging/platforms/SMS/send-notification?allowMultipleSegments=true
-		- Time delay for SMS #2? Enrollment group originally wanted 24 hours, then just 30 minutes. Might be best to split this into an admin setting for any future changes (would also make testing on dev environments easier)
 
 ## Quiq admin info
 nus.goquiq.com
-[[ ACCOUNT LOGIN DETAILS OMITTED ]]
+NUS_QUIQ_API
+G6ZSHyk2zQTtdzpzwH
 Able to manage API keys, manage contact points, view outbound SMS's sent
 
 ## Testing/Dev notes
-	- For ease of testing, change timeframe delay (both wp-cron line 60, and $diff on line 333) to 60 seconds (might be worth splitting this into wp-admin setting)
+	- For ease of testing, change timeframe delay (both wp-cron line 60, and $diff on line 333) to 60 seconds
 	- WP Cron can be wonky on local dev (it was for me at least), but works as intended on preprod
 	- WP Cron is triggered by pageviews. Not an issue on live site due to high traffic, but on preprod/dev may need to "simulate" traffic by clicking around
 	- Our config settings for Quiq authentication include API Key, Secret, Token ID, and Access Token. Our current authentication method only uses API Key + Secret, but included the other two in case we need it in the future.
-	- NU Enrollment team needs to see these form submission leads somehow marked as 'SMS' in OnDemand. There was lots of confusion as to how our form submission data flows through to OnDemand, and it sounds like the enrollment team isn't entirely clear on it either.
-		- Current process flow for these instances: WordPress (GravityForms) >> Eloqua >> OnDemand.
-		- This is different than most GF submissions, which go: Gravity Form >> DoublePositive >> OnDemand
+	- NU Enrollment team needs to see these form submission leads somehow marked as 'SMS' in OnDemand. There was lots of confusion as to how our form submission data flows through to OnDemand.
+		- Current process flow for these instances: Gravity Form >> Eloqua >> OnDemand.
+		- This is different than most form submissions, which go: Gravity Form >> DoublePositive >> OnDemand
 		- This is managed via our custom 'gravityforms-doublepositive' plugin
 
 	- Quiq API documentation: https://developers.goquiq.com/api/docs#operation/Send%20notification
@@ -59,6 +64,44 @@ Able to manage API keys, manage contact points, view outbound SMS's sent
 ### Misc Points of Contact:
 Quiq Developer API: Maile Chong <maile.chong@quiq.com>
 NU Enrollment Team/OnDemand: Claire Leong <CLeong@nu.edu>
+
+
+
+
+GF webhooks:
+DP: https://apps.doublepositive.com/api/lead/InsertLead
+ELQ: https://s1015724034.t.eloqua.com/e/f2
+
+
+
+Test cases:
+[xx] - Submit 'target' form from its program page.
+	  - Leadgroup Special + SMS send
+[xx] - Submit 'target program' on non-program page form.
+	  - Leadgroup Special + SMS send
+[xx] - Submit non-target program from target-program page.
+	  - Normal leadgroup, no SMS
+[xx] - Submit non-target program from non-target page
+	  - Normal leadgroup, no SMS
+[xx]	- Submit RFI elsewhere on site. For both target & non target programs
+
+[xx] - Submit form other than RFI default
+	  - Normal form processing
+
+[x] - Submit international zipcode
+	- Normal leadgrop, no SMS
+
+
+Error handling:
+- If settings are missing in wp-admin. Still submit form normally. Maybe special lead group?
+
+All prospective students are advised to review employment, certification, and licensure requirements in their state, and to contact the certification/licensing body of the state or country where they intend to obtain certification/licensure to verify that these cours-es/programs qualify in that state/country, prior to enrolling. Prospective students are al-so advised to regularly review the state’s/country’s policies and procedures relating to certification/licensure, as those policies are subject to change.
+
+
+Test link: http://nuedu.vipdev.lndo.site/ourprograms/college-of-professional-studies/professionalstudies/programs/bachelor-public-administration/
+Inactive program link: http://nuedu.vipdev.lndo.site/ourprograms/collegeoflettersandsciences/artsandhumanities/programs/associate-arts-business-administration/
+
+Non-RFI form: http://nuedu.vipdev.lndo.site/admissions/earlycollege/
 
 
 

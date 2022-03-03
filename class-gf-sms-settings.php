@@ -1,25 +1,25 @@
 <?php
 /**
- * Extend Gravity Forms plugin to include 'SMS Responder' settings page within GF settings menu.
+ * Add wp-admin settings options page for Gravity Forms SMS customization. General goal to move config options to admin side, so updates/changes wont require a new code release.
  *
- * Adds menu to: WP-Admin > Forms > Settings > SMS Responder
+ * Adds menu to: Forms > Settings > SMS Responder
  *
  * Allows for customizations:
- * - Enable/Disable entire SMS responder
- * - Input program page IDs for SMS responder
- * - Manage Quiq API key & authorization
- * - Manage text message content
- * - Data integrations: Set Supplier ID and Lead Routing Group for DoublePositive & Eloqua
- * - Other inputs as needed? (Ideally want to avoid having to do a new code release for minor changes that could just be handled via wp-admin)
+ * - Select specific degree programs targeted by SMS RFI
+ * - Configure text message content
+ * - Configure Quiq admin integration & API access
+ * - Configure other third-party GF integrations (DoublePositive, Eloqua)
  */
+
+// Don't think I need this here, will re-visit.
+// GFForms::include_addon_framework().
 
 /**
  * GF_NUS_SMS_Settings class
  * GFAddOn ref: https://docs.gravityforms.com/gfaddon/
  *
  * @todo Better UI for API Keys form fields, to prevent accidental deletion/screw ups
- * @todo General form UI improvements (I'm sure GF has a lot of built-in helpers, look into at some point)
- * @todo Cleaner way to add/remove target program IDs (currently a comma-separated list of page IDs)
+ * @todo General form UI improvements (I'm sure GF has a lot of built-in helpers)
  */
 class GF_NUS_SMS_Settings extends GFAddOn {
 
@@ -114,7 +114,7 @@ class GF_NUS_SMS_Settings extends GFAddOn {
 						'name'    => 'is_sms_pilot_enabled',
 						'type'    => 'checkbox',
 						'label'   => esc_html__( 'SMS Pilot Enabled', 'national-university' ),
-						'tooltip' => esc_html__( 'Turn program on/off', 'national-university' ),
+						'tooltip' => esc_html__( 'This doesnt actually do anything right now.', 'national-university' ),
 						'choices' => [
 							[
 								'name'  => 'sms_pilot_enabled',
@@ -127,8 +127,16 @@ class GF_NUS_SMS_Settings extends GFAddOn {
 						'type'        => 'text',
 						'class'       => 'medium',
 						'label'       => esc_html__( 'Program Page IDs', 'national-university' ),
-						'description' => esc_html__( 'Comma delimited values.', 'national-university' ),
-						'tooltip'     => esc_html__( 'The IDs of the program pages we want to use SMS responder on.', 'national-university' ),
+						'description' => esc_html__( 'Not currently used.', 'national-university' ),
+						'tooltip'     => esc_html__( 'Not currently used.', 'national-university' ),
+					],
+					[
+						'name'        => 'sms_pilot_program_titles',
+						'type'        => 'textarea',
+						'class'       => 'medium',
+						'label'       => esc_html__( 'Program Titles', 'national-university' ),
+						'description' => esc_html__( 'Comma delimited values. One program per line. MUST match value populated in RFI "Degree Program" dropdown. IMPORTANT: Some degrees have a double-space in the dropdown option value (i.e. BS in Healthcare Administration). Make sure these double-spaces are incorporated here.', 'national-university' ),
+						'tooltip'     => esc_html__( 'Comma-separated list of program titles. One program per line.', 'national-university' ),
 					],
 				],
 			],
@@ -138,19 +146,19 @@ class GF_NUS_SMS_Settings extends GFAddOn {
 				'fields'      => [
 					[
 						'name'        => 'sms_quiq_message_content_1',
-						'type'        => 'text',
+						'type'        => 'textarea',
 						'class'       => 'medium',
 						'label'       => esc_html__( 'SMS Message Content #1', 'national-university' ),
 						'description' => esc_html__( 'Text content for SMS.', 'national-university' ),
-						'tooltip'     => esc_html__( 'Plain text. Keep in mind character limit for text messages.', 'national-university' ),
+						'tooltip'     => esc_html__( 'Plain text', 'national-university' ),
 					],
 					[
 						'name'        => 'sms_quiq_message_content_2',
-						'type'        => 'text',
+						'type'        => 'textarea',
 						'class'       => 'medium',
 						'label'       => esc_html__( 'SMS Message Content #2', 'national-university' ),
 						'description' => esc_html__( 'Text content for SMS.', 'national-university' ),
-						'tooltip'     => esc_html__( 'Plain text. Keep in mind character limit for text messages.', 'national-university' ),
+						'tooltip'     => esc_html__( 'Plain text', 'national-university' ),
 					],
 					[
 						'name'        => 'sms_quiq_contact_point',
@@ -190,12 +198,28 @@ class GF_NUS_SMS_Settings extends GFAddOn {
 						'description' => esc_html__( 'Prevents DoublePositive from phone call follow-up', 'national-university' ),
 						'tooltip'     => esc_html__( '&nbsp;', 'national-university' ),
 					],
+					[
+						'name'        => 'sms_doublepositive_leadgroup',
+						'type'        => 'text',
+						'class'       => 'medium',
+						'label'       => esc_html__( 'Lead Routing Group for SMS Submissions', 'national-university' ),
+						'description' => esc_html__( 'Maps to OnDemand, used by Enrollment team', 'national-university' ),
+						'tooltip'     => esc_html__( '&nbsp;', 'national-university' ),
+					],
 				],
 			],
 			[
 				'title'       => esc_html__( 'Quiq API Configuration', 'national-university' ),
 				'description' => esc_html__( 'Quiq API Configuration. nus.goquiq.com -> Admin panel for user "NUS_QUIQ_API"', 'national-university' ),
 				'fields'      => [
+					[
+						'name'        => 'sms_quiq_api_endpoint',
+						'type'        => 'text',
+						'class'       => 'medium',
+						'label'       => esc_html__( 'Quiq API Endpoint URL', 'national-university' ),
+						'description' => esc_html__( 'Quiq API Endpoint URL', 'national-university' ),
+						'tooltip'     => esc_html__( 'Query param "allowMultipleSegments" to let us go over 160 characters in a single SMS. See API docs.', 'national-university' ),
+					],
 					[
 						'name'        => 'sms_quiq_api_key',
 						'type'        => 'text',
