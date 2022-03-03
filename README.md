@@ -1,5 +1,12 @@
 # SMS RFI Functionality
 
+
+## Screenshots for portfolio version
+![Screenshot 1](/screenshots/sms-1.png?raw=true "Custom Settings Page 1")
+![Screenshot 2](/screenshots/sms-2.png?raw=true "Custom Settings Page 2")
+![Screenshot 3](/screenshots/sms-3.png?raw=true "RFI Form Front End")
+![Screenshot 4](/screenshots/sms-4.jpg?raw=true "SMS Text Results")
+
 TODO: Lot's of need for cleanup & refactoring. Currently (2/17) in 'minimum viable product' mode for imminent project launch deadline. There's been a lot of headaches and curveballs on this one and right now it works and I'm terrified of changing anything. Will continue to refine and improve once we have longer-term deadlines.
 
 **Update 2/28 to change back-end logic for checking degree programs. Now checking based on actual 'degree program' submitted on form, rather than page ID.
@@ -102,11 +109,3 @@ Test link: http://nuedu.vipdev.lndo.site/ourprograms/college-of-professional-stu
 Inactive program link: http://nuedu.vipdev.lndo.site/ourprograms/collegeoflettersandsciences/artsandhumanities/programs/associate-arts-business-administration/
 
 Non-RFI form: http://nuedu.vipdev.lndo.site/admissions/earlycollege/
-
-
-
-## Screenshots
-![Screenshot 1](/screenshots/sms-1.png?raw=true "Custom Settings Page 1")
-![Screenshot 2](/screenshots/sms-2.png?raw=true "Custom Settings Page 2")
-![Screenshot 3](/screenshots/sms-3.png?raw=true "RFI Form Front End")
-![Screenshot 4](/screenshots/sms-4.jpg?raw=true "SMS Text Results")
