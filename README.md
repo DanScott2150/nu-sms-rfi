@@ -71,17 +71,16 @@ Able to manage API keys, manage contact points, view outbound SMS's sent
 
 
 ### Misc Points of Contact:
-Quiq Developer API: Maile Chong <maile.chong@quiq.com>
-NU Enrollment Team/OnDemand: Claire Leong <CLeong@nu.edu>
+// omit for portfolio
 
 
 
 
-GF webhook endpoints:
+### GF webhook endpoints:
 //omit for portfolio
 
 
-Test cases:
+### Test cases:
 [xx] - Submit 'target' form from its program page.
 	  - Leadgroup Special + SMS send
 
